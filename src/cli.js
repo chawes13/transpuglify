@@ -169,7 +169,14 @@ function createTasks (finalizedOptions) {
       title: 'Try to Transpile and Minify file(s) with global package installations',
       enabled: ctx => !!ctx.error,
       task: async (ctx) => {
-        return exec('cd $(dirname $(which transpuglify)) && cd .. && webpack --config '+ ctx.configPath)
+        try {
+          await exec('cd $(dirname $(which transpuglify)) && cd .. && webpack --config '+ ctx.configPath)
+          
+          // reset the error if the install was successful
+          ctx.error = ''
+        } catch (e) {
+          ctx.error = e.message
+        }
       }
     },
     {
