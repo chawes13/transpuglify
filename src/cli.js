@@ -46,8 +46,7 @@ cli(process.argv)
 // Check to see if arguments that can be actioned immediately were supplied and
 // performs the action (if found)
 function actionImmediatelyActionableArguments (rawArgs) {
-  // Return help menu if "help" or nothing is supplied
-  if (rawArgs.length === 2 || rawArgs[2] === 'help') {
+  if (rawArgs[2] === 'help') {
     displayHelpMenu()
     return true
   }
@@ -156,13 +155,12 @@ function createTasks (finalizedOptions) {
         .then((path) => ctx.configPath = path)
     },
     {
-      title: 'Transpile and Minifiy file(s)',
+      title: 'Transpile and Minify file(s)',
       task: (ctx, task) => exec('yarn webpack --config ' + ctx.configPath)
           .catch((err) => {
             // If the issue is not related to yarn, then continue to throw the error to stop the next task from proceeding
             logStatus.error(err)
-            if (err.search(/yarn/i) === -1) {
-              logStatus.error(err)
+            if (err && err.search(/yarn/i) === -1) {
               throw err
             }
             
