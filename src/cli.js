@@ -30,11 +30,14 @@ async function cli (args) {
     const tasks = createTasks(finalizedOptions)
     
     logStatus.info('Initiating transpuglification')
-    await tasks.run()
+    
+    const result = await tasks.run()
+    if (result.error) throw new Error(result.error)
+    
     logStatus.success('File(s) successfully transpuglified')
     return true
   } catch (error) {
-    logStatus.error(error)
+    logStatus.error(`File(s) were not transplugified: ${error}`)
     return false
   }
 }
@@ -114,7 +117,7 @@ async function promptForMissingOptions (options) {
   if (!options.entryDirectory) questions.push({
     type: 'input',
     name: 'entryDirectory',
-    message: 'Provide the relative path to the entry point',
+    message: 'Provide the relative path to the entry point directory',
     validate: async (ans) => {
       const files = await readdir(ans)
       if (!files.length) return 'Please select a directory with at least 1 file'
@@ -156,22 +159,11 @@ function createTasks (finalizedOptions) {
     },
     {
       title: 'Transpile and Minify file(s)',
-      task: (ctx, task) => exec('yarn webpack --config ' + ctx.configPath)
-          .catch((err) => {
-            // If the issue is not related to yarn, then continue to throw the error to stop the next task from proceeding
-            logStatus.error(err)
-            if (err && err.search(/yarn/i) === -1) {
-              throw err
-            }
-            
-            ctx.yarn = false
-            task.skip('Yarn not available, install it via `npm install -g yarn`')
-          })
-    },
-    {
-        title: 'Transpile and Minify file(s) with npm',
-        enabled: ctx => ctx.yarn === false,
-        task: () => exec('npm webpack --config ' + ctx.configPath)
+      task: (ctx, task) => exec('webpack --config ' + ctx.configPath)
+        .catch((err) => {
+          ctx.error = err.message
+          task.skip('Unable to complete process')
+        })
     },
     {
       title: 'Remove temporary config files',
